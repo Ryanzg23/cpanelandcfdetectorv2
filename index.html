@@ -344,6 +344,12 @@ td.ns-col {
 </div>
 
 <div class="card">
+  <div id="progressWrap" style="display:none; margin-bottom:10px;">
+    <div style="height:10px; background:#e5e7eb; border-radius:6px; overflow:hidden;">
+      <div id="progressBar" style="height:100%; width:0%; background:#16a34a;"></div>
+    </div>
+    <div id="progressText" style="font-size:12px; margin-top:4px;">0%</div>
+  </div>
   <button id="run">Run Detection</button>
 </div>
 
@@ -374,38 +380,48 @@ document.addEventListener("DOMContentLoaded", () => {
   const tbody = document.getElementById("results");
 
   runBtn.onclick = async () => {
-
+  
     const domains = [...new Set(
       textarea.value.split(/\s+/).map(d => d.trim()).filter(Boolean)
     )];
-
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="7">Checking…</td>
-      </tr>
-    `;
-
+  
+    const progressWrap = document.getElementById("progressWrap");
+    const progressBar = document.getElementById("progressBar");
+    const progressText = document.getElementById("progressText");
+  
+    progressWrap.style.display = "block";
+    progressBar.style.width = "0%";
+    progressText.textContent = "0%";
+  
+    tbody.innerHTML = "";
+  
+    const total = domains.length;
+    let completed = 0;
+  
     try {
       const res = await fetch("/.netlify/functions/detect", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          domains: domains   // ← MUST be this
-        })
+        body: JSON.stringify({ domains })
       });
-
+  
       const data = await res.json();
-      tbody.innerHTML = "";
-
-      data.forEach((r, i) => {
-
+  
+      data.forEach((r) => {
+  
+        completed++;
+        const percent = Math.round((completed / total) * 100);
+  
+        progressBar.style.width = percent + "%";
+        progressText.textContent = percent + "%";
+  
         const tr = document.createElement("tr");
-
+  
         tr.innerHTML = `
           <td>${r.domain}</td>
-
+  
           <td>
             ${
               r.http_result?.startsWith("301 to")
@@ -415,11 +431,10 @@ document.addEventListener("DOMContentLoaded", () => {
                   : r.http_result || "-"
             }
           </td>
-
+  
           <td>${r.http_via || "-"}</td>
           <td>${r.cloudflare || "-"}</td>
-          
-          <!-- ✅ NEW COLUMN -->
+  
           <td>
             ${
               r.whm_server && r.whm_server !== "-"
@@ -427,9 +442,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 : "-"
             }
           </td>
-          
+  
           <td>${r.registrar || "-"}</td>
-
+  
           <td>
             ${
               r.nameservers && r.nameservers !== "-"
@@ -438,10 +453,10 @@ document.addEventListener("DOMContentLoaded", () => {
             }
           </td>
         `;
-
+  
         tbody.appendChild(tr);
       });
-
+  
     } catch (err) {
       tbody.innerHTML = `
         <tr>
@@ -449,6 +464,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </tr>
       `;
     }
+  
   };
 
 });
