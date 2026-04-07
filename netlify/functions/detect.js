@@ -8,13 +8,14 @@ const WHM_SERVERS = [
   }
 ];
 
-let DOMAIN_MAP = null;
+// 🔥 simple cache
+let WHM_CACHE = null;
 
-// 🔥 Build domain map ONCE per request
-async function buildDomainMap() {
-  if (DOMAIN_MAP) return DOMAIN_MAP;
+// 🧠 Build cache (MAIN DOMAINS ONLY)
+async function buildWhmCache() {
+  if (WHM_CACHE) return WHM_CACHE;
 
-  DOMAIN_MAP = {};
+  WHM_CACHE = {};
 
   for (const server of WHM_SERVERS) {
     try {
@@ -30,63 +31,40 @@ async function buildDomainMap() {
       const data = await res.json();
       const accounts = data?.data?.acct || [];
 
-      // 🔥 LIMIT accounts to avoid timeout (adjust if needed)
-      const LIMITED = accounts.slice(0, 15);
-
-      for (const a of LIMITED) {
-        const user = a.user;
-        const mainDomain = a.domain.toLowerCase();
-
-        // ✅ Always include main domain
-        DOMAIN_MAP[mainDomain] = {
-          server: server.name,
-          user
-        };
-
-        try {
-          const res2 = await fetch(
-            `${server.host}/json-api/domainuserdata?api.version=1&user=${user}`,
-            {
-              headers: {
-                Authorization: `whm root:${server.token}`
-              }
-            }
-          );
-
-          const data2 = await res2.json();
-          const userdata = data2?.data?.userdata || {};
-
-          for (const d in userdata) {
-            DOMAIN_MAP[d.toLowerCase()] = {
-              server: server.name,
-              user
-            };
-          }
-
-        } catch (e) {
-          console.log(`USERDATA ERROR (${user})`);
-        }
-      }
+      WHM_CACHE[server.name] = accounts.map(a => ({
+        domain: a.domain.toLowerCase(),
+        user: a.user
+      }));
 
     } catch (e) {
       console.log("WHM ERROR:", e.message);
     }
   }
 
-  return DOMAIN_MAP;
+  return WHM_CACHE;
 }
 
-// 🔍 Detect domain
+// 🔍 Detect (MAIN DOMAIN ONLY)
 async function detectWhmServer(domain) {
-  const map = await buildDomainMap();
+  const cache = await buildWhmCache();
 
   domain = domain.toLowerCase();
 
-  return (
-    map[domain] ||
-    map[domain.replace(/^www\./, "")] ||
-    { server: "-", user: "-" }
-  );
+  for (const serverName in cache) {
+    for (const acc of cache[serverName]) {
+      if (
+        acc.domain === domain ||
+        acc.domain === domain.replace(/^www\./, "")
+      ) {
+        return {
+          server: serverName,
+          user: acc.user
+        };
+      }
+    }
+  }
+
+  return { server: "-", user: "-" };
 }
 
 // 🌐 HTTP check
@@ -121,10 +99,9 @@ export async function handler(event) {
       };
     }
 
-    // 🔥 BUILD MAP ONCE HERE
-    await buildDomainMap();
+    // 🔥 build cache once
+    await buildWhmCache();
 
-    // ⚡ Process domains in parallel
     const results = await Promise.all(
       domains.map(async (d) => {
         const domain = d.trim();
@@ -150,9 +127,7 @@ export async function handler(event) {
   } catch (e) {
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        error: e.message
-      })
+      body: JSON.stringify({ error: e.message })
     };
   }
 }
