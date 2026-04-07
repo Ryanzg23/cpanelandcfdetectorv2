@@ -333,7 +333,7 @@ export async function handler(event) {
 
     await buildWhmCache();
 
-    const results = await runWithConcurrency(inputs, 5, async (input) => {
+    const results = await runWithConcurrency(inputs, 3, async (input) => {
       const hostname = normalizeDomain(input);
 
       const http = await detectHttp(input);
