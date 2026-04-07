@@ -99,20 +99,40 @@ async function detectWhmServer(domain) {
       );
 
       const data = await res.json();
-
       const accounts = data?.data?.acct || [];
 
-      const match = accounts.find(a =>
-        a.domain === domain ||
-        a.user === domain ||
-        (a.domain && a.domain.includes(domain))
-      );
+      for (const a of accounts) {
+        const mainDomain = a.domain;
+        const user = a.user;
 
-      if (match) {
-        return {
-          server: server.name,
-          user: match.user
-        };
+        // normalize addon / parked domains
+        const addonDomains = (a.addon_domains || "")
+          .split(/\s+/)
+          .map(d => d.trim().toLowerCase())
+          .filter(Boolean);
+
+        const parkedDomains = (a.parked_domains || "")
+          .split(/\s+/)
+          .map(d => d.trim().toLowerCase())
+          .filter(Boolean);
+
+        const subDomains = (a.sub_domains || "")
+          .split(/\s+/)
+          .map(d => d.trim().toLowerCase())
+          .filter(Boolean);
+
+        if (
+          domain === mainDomain ||
+          domain === `www.${mainDomain}` ||
+          addonDomains.includes(domain) ||
+          parkedDomains.includes(domain) ||
+          subDomains.includes(domain)
+        ) {
+          return {
+            server: server.name,
+            user
+          };
+        }
       }
 
     } catch (e) {
