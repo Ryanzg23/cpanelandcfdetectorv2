@@ -244,7 +244,11 @@ export async function handler(event) {
     )];
 
     if (!inputs.length) {
-      return { statusCode: 400, body: "No domains provided" };
+      console.log("NO DOMAINS RECEIVED", body);
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "No domains received", body })
+      };
     }
 
     const BASE =
@@ -259,6 +263,7 @@ export async function handler(event) {
       if (d) pagesMap[d] = r.Cloudflare;
     });
 
+    
     const cfNs = cfCsv.map(r => ({
       email: r["Cloudflare Email"],
       ns1: r["Nameserver 1"]?.toLowerCase(),
