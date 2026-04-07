@@ -8,6 +8,11 @@ const WHM_SERVERS = [
     token: process.env.WHM_SG1
   },
   {
+    name: "SG-2",
+    host: "https://ns5026652.ip-15-235-216.net:2087",
+    token: process.env.WHM_SG2
+  },
+  {
     name: "GD USL",
     host: "https://1.88.74.97.host.secureserver.net:2087",
     token: process.env.GD_USL
