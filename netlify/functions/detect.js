@@ -296,9 +296,9 @@ export async function handler(event) {
 
       /* ===== WHM ===== */
       let whm = await detectWhmServer(hostname);
-
-      // 🔥 fallback for addon domains
-      if (whm.server === "-") {
+      
+      // 🔥 ONLY try addon detection for 1st few domains (avoid overload)
+      if (whm.server === "-" && Math.random() < 0.2) {
         const addon = await detectAddonDomain(hostname);
         if (addon.server !== "-") {
           whm = addon;
