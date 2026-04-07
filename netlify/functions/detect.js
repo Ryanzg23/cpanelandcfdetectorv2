@@ -19,9 +19,20 @@ const WHM_SERVERS = [
   }
 ];
 
+const WHM_USERS = {
+  "SG-1": [
+    "maha168slot","maha168","hokibetberry","mabosway","userslotorg",
+    "depoxitojp","mabosvippro","sitususer138","judiuser138"
+  ],
+  "SG-2": [
+    "maha168bisa","betberryresmi","mabosplayweb","mabosplaygame",
+    "maboswayyuk","depoxitovvip","slotuser138","serverusergacor"
+  ]
+};
+
 let WHM_CACHE = null;
 
-/* ================= WHM DETECTION (MAIN ONLY) ================= */
+/* ================= WHM MAIN DOMAIN ================= */
 async function buildWhmCache() {
   if (WHM_CACHE) return WHM_CACHE;
 
@@ -76,58 +87,41 @@ async function detectWhmServer(domain) {
   return { server: "-", user: "-" };
 }
 
+/* ================= ADDON DETECTION (USER-BASED) ================= */
+async function detectAddonFromUsers(domain) {
+  domain = domain.toLowerCase();
 
-
-async function detectAddonDomain(domain) {
   for (const server of WHM_SERVERS) {
-    try {
-      const res = await fetch(
-        `${server.host}/json-api/listaccts?api.version=1`,
-        {
-          headers: {
-            Authorization: `whm root:${server.token}`
-          }
-        }
-      );
+    const users = WHM_USERS[server.name] || [];
 
-      const data = await res.json();
-      const accounts = data?.data?.acct || [];
-
-      // 🔥 HARD LIMIT (very important)
-      for (const a of accounts.slice(0, 5)) {
-        const user = a.user;
-
-        try {
-          const res2 = await fetch(
-            `${server.host}/json-api/cpanel?cpanel_jsonapi_user=${user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=AddonDomain&cpanel_jsonapi_func=listaddondomains`,
-            {
-              headers: {
-                Authorization: `whm root:${server.token}`
-              }
+    for (const user of users) {
+      try {
+        const res = await fetch(
+          `${server.host}/json-api/cpanel?cpanel_jsonapi_user=${user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=AddonDomain&cpanel_jsonapi_func=listaddondomains`,
+          {
+            headers: {
+              Authorization: `whm root:${server.token}`
             }
-          );
-
-          const data2 = await res2.json();
-          const addons = data2?.cpanelresult?.data || [];
-
-          const match = addons.find(a =>
-            a.domain?.toLowerCase() === domain
-          );
-
-          if (match) {
-            return {
-              server: server.name,
-              user
-            };
           }
+        );
 
-        } catch (e) {
-          console.log("ADDON API ERROR:", e.message);
+        const data = await res.json();
+        const addons = data?.cpanelresult?.data || [];
+
+        const found = addons.find(a =>
+          a.domain?.toLowerCase() === domain
+        );
+
+        if (found) {
+          return {
+            server: server.name,
+            user
+          };
         }
-      }
 
-    } catch (e) {
-      console.log("WHM ERROR:", e.message);
+      } catch (e) {
+        console.log(`ADDON ERROR (${user}):`, e.message);
+      }
     }
   }
 
@@ -293,7 +287,6 @@ export async function handler(event) {
       return { statusCode: 400, body: "No domains provided" };
     }
 
-    /* 🔥 build WHM cache once */
     await buildWhmCache();
 
     const results = await runWithConcurrency(inputs, 5, async (input) => {
@@ -316,10 +309,9 @@ export async function handler(event) {
 
       /* ===== WHM ===== */
       let whm = await detectWhmServer(hostname);
-      
-      // 🔥 ONLY try addon detection for 1st few domains (avoid overload)
-      if (whm.server === "-" && Math.random() < 0.2) {
-        const addon = await detectAddonDomain(hostname);
+
+      if (whm.server === "-") {
+        const addon = await detectAddonFromUsers(hostname);
         if (addon.server !== "-") {
           whm = addon;
         }
@@ -333,8 +325,6 @@ export async function handler(event) {
         http_via: http.via,
         http_trail: http.trail,
         nameservers: nameservers.length ? nameservers.join(", ") : "-",
-
-        // ✅ NEW FIELD (your table already supports this)
         whm_server: whm.server,
         whm_user: whm.user
       };
