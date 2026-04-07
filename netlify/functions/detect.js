@@ -27,7 +27,6 @@ async function buildDomainMap() {
 
   for (const server of WHM_SERVERS) {
     try {
-      // 1️⃣ Get all accounts
       const res = await fetch(
         `${server.host}/json-api/listaccts?api.version=1`,
         {
@@ -42,9 +41,17 @@ async function buildDomainMap() {
 
       console.log(`📦 ${server.name}: ${accounts.length} accounts`);
 
-      // 2️⃣ Loop each account → fetch ALL domains
-      for (const a of accounts) {
+      // 🔥 LIMIT users processed (prevents timeout)
+      const LIMITED_ACCOUNTS = accounts.slice(0, 50);
+
+      for (const a of LIMITED_ACCOUNTS) {
         const user = a.user;
+
+        // ✅ Always include main domain
+        DOMAIN_MAP[a.domain.toLowerCase()] = {
+          server: server.name,
+          user
+        };
 
         try {
           const res2 = await fetch(
@@ -59,15 +66,15 @@ async function buildDomainMap() {
           const data2 = await res2.json();
           const userdata = data2?.data?.userdata || {};
 
-          for (const domain in userdata) {
-            DOMAIN_MAP[domain.toLowerCase()] = {
+          for (const d in userdata) {
+            DOMAIN_MAP[d.toLowerCase()] = {
               server: server.name,
               user
             };
           }
 
         } catch (e) {
-          console.log(`⚠️ USERDATA ERROR (${user}):`, e.message);
+          console.log(`⚠️ USERDATA ERROR (${user})`);
         }
       }
 
@@ -82,7 +89,6 @@ async function buildDomainMap() {
 
   return DOMAIN_MAP;
 }
-
 // 🔍 Detect domain from cache
 async function detectWhmServer(domain) {
   const map = await buildDomainMap();
