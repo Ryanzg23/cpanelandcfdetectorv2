@@ -15,7 +15,6 @@
   --accent: #2563eb;
   --hover: rgba(37,99,235,.06);
 }
-
 body.dark {
   --bg: #0f172a;
   --card: #020617;
@@ -24,31 +23,24 @@ body.dark {
   --accent: #60a5fa;
   --hover: rgba(96,165,250,.12);
 }
-
 body {
   margin: 0;
   font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
   background: var(--bg);
   color: var(--text);
 }
-
 .container {
   max-width: 1400px;
   margin: 32px auto;
   padding: 0 16px;
 }
-
 header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
 }
-
-h1 {
-  font-size: 24px;
-  margin: 0;
-}
+h1 { font-size: 24px; margin: 0; }
 
 button {
   background: var(--accent);
@@ -57,32 +49,8 @@ button {
   padding: 10px 16px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color .2s ease, filter .2s ease, transform .05s ease;
 }
-
-button:hover:not(:disabled) {
-  filter: brightness(.95);
-}
-
-button:disabled {
-  opacity: .6;
-  cursor: not-allowed;
-}
-
-button:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-/* Green action button */
-.btn-green {
-  background: #16a34a; /* green */
-  color: #ffffff;
-}
-
-.btn-green:hover:not(:disabled) {
-  filter: brightness(0.92);
-}
-
+.btn-green { background: #16a34a; }
 
 .card {
   background: var(--card);
@@ -90,42 +58,15 @@ button:active:not(:disabled) {
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 16px;
-}
-
-/* Prevent textarea overflow */
-textarea {
-  box-sizing: border-box;
-  max-width: 100%;
-}
-
-/* Prevent table overflow */
-table {
-  table-layout: auto;
-  width: 100%;
-}
-
-/* Force long URLs to wrap */
-td {
-  word-break: break-word;
-  overflow-wrap: anywhere;
-}
-
-/* Safety for cards */
-.card {
   overflow-x: auto;
 }
-
 
 textarea {
   width: 100%;
   min-height: 120px;
-  resize: vertical;
   padding: 10px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  font-family: inherit;
-  background: var(--bg);
-  color: var(--text);
 }
 
 table {
@@ -133,19 +74,10 @@ table {
   border-collapse: collapse;
   font-size: 14px;
 }
-
 th, td {
   padding: 10px;
   border-bottom: 1px solid var(--border);
-  vertical-align: middle;
 }
-
-th {
-  text-align: left;
-  font-weight: 600;
-  color: #64748b;
-}
-
 tbody tr:nth-child(even) {
   background: rgba(0,0,0,.03);
 }
@@ -153,182 +85,21 @@ body.dark tbody tr:nth-child(even) {
   background: rgba(255,255,255,.04);
 }
 
-tbody tr:hover {
-  background: var(--hover);
-}
-
-/* Column sizing */
-th.cloudflare-col,
-td.cloudflare-col {
-  min-width: 195px;
-}
-
-th.http-col,
-td.http-col {
-  min-width: 300px;
-}
-
-th.via-col,
-td.via-col {
-  min-width: 95px;
-}
-
-th.ns-col,
-td.ns-col {
-  min-width: 190px;
-}
-
-.action-link {
-  font-size: 12px;
-  color: var(--accent);
-  text-decoration: none;
-  cursor: pointer;
-}
-.action-link:hover {
-  text-decoration: underline;
-}
-
-/* Progress bar */
-.progress-wrap {
-  display: inline-flex;
-  align-items: center;
-  width: 180px;
-  height: 8px;
-  background: var(--border);
-  border-radius: 999px;
-  overflow: hidden;
-  margin-left: 12px;
-  opacity: 0;
-}
-
-.progress-bar {
-  height: 100%;
-  width: 0%;
-  background: var(--accent);
-  transition: width .3s ease;
-}
-
-/* Modal */
-.modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.5);
-  z-index: 1000;
-}
-
-.modal-content {
-  background: var(--card);
-  color: var(--text);
-  max-width: 640px;
-  margin: 10vh auto;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-}
-
-.modal-body {
-  padding: 16px;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.modal-header button {
-  background: none;
-  border: none;
-  font-size: 16px;
-  cursor: pointer;
-  color: var(--text);
-}
-
-  /* Status badges */
 .badge {
-  display: inline-block;
   padding: 2px 6px;
   border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
-  line-height: 1;
 }
+.badge-301 { background:#2563eb;color:#fff;}
+.badge-200 { background:#16a34a;color:#fff;}
+.badge-404 { background:#dc2626;color:#fff;}
 
-.badge-301 {
-  background: #2563eb; /* blue */
-  color: #ffffff;
-}
-.badge-301-modal{ cursor: pointer; }
-
-.badge-200 {
-  background: #16a34a; /* green */
-  color: #ffffff;
-}
-
-.badge-404 {
-  background: #dc2626; /* red */
-  color: #ffffff;
-}
-
-/* Trail table inside modal */
-.trail-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.trail-table td {
-  padding: 6px 0;
-  vertical-align: middle;
-}
-
-.trail-url {
+.action-link {
+  font-size: 12px;
   color: var(--accent);
-  text-decoration: none;
-  word-break: break-all;
+  cursor: pointer;
 }
-
-.trail-status {
-  margin-left: 8px;
-}
-/* Header tool links */
-.tool-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  color: #ffffff;
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 500;
-  transition: filter .2s ease, transform .05s ease;
-}
-
-.tool-link:hover {
-  filter: brightness(.92);
-}
-
-.tool-link:active {
-  transform: translateY(1px);
-}
-
-/* Tool colors */
-.tool-amp {
-  background: #455a64;
-}
-
-.tool-robots {
-  background: #0080A0;
-}
-
-.tool-seo {
-  background: #2563eb;
-}
-
 </style>
 </head>
 
@@ -337,73 +108,28 @@ td.ns-col {
 
 <header>
   <h1>Bulk Domain Detector</h1>
-
-  <div style="display:flex;align-items:center;gap:8px">
-    
-    <a
-      href="https://seocheckerpromax.netlify.app/"
-      target="_blank"
-      class="tool-link tool-seo"
-      title="Bulk SEO Viewer"
-    >
-      📊 Bulk SEO Viewer
-    </a>
-    <a
-      href="https://majormaintenancestarterpack.netlify.app/bulkamptester"
-      target="_blank"
-      class="tool-link tool-amp"
-      title="Bulk AMP Tester"
-    >
-      ⚡ Bulk AMP
-    </a>
-
-    <a
-      href="https://bulkrobots-sitemap.netlify.app/"
-      target="_blank"
-      class="tool-link tool-robots"
-      title="Bulk Robots & Sitemap"
-    >
-      🤖 Bulk Robots & Sitemap
-    </a>
-
-    <button id="themeToggle">🌙 Dark</button>
-
-  </div>
+  <button id="themeToggle">🌙 Dark</button>
 </header>
 
-
 <div class="card">
-  <label><strong>Domains (one per line)</strong></label>
   <textarea id="domains" placeholder="example.com"></textarea>
 </div>
 
-<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-
-  <div style="display:flex;align-items:center">
-    <button id="run">Run Detection</button>
-    <div class="progress-wrap" id="progressWrap">
-      <div class="progress-bar" id="progressBar"></div>
-    </div>
-  </div>
-
-  <button id="bulkOpen" class="btn-green">
-    Bulk Open Domains
-  </button>
-
-
+<div class="card">
+  <button id="run">Run Detection</button>
 </div>
-
 
 <div class="card">
   <table>
     <thead>
       <tr>
         <th>Domain</th>
-        <th class="http-col">HTTP Result</th>
-        <th class="via-col">301 via</th>
-        <th class="cloudflare-col">Cloudflare</th>
+        <th>HTTP Result</th>
+        <th>301 via</th>
+        <th>Cloudflare</th>
         <th>Registrar</th>
-        <th class="ns-col">Nameservers</th>
+        <th>Nameservers</th>
+        <th>cPanel</th> <!-- ✅ NEW -->
       </tr>
     </thead>
     <tbody id="results"></tbody>
@@ -412,110 +138,14 @@ td.ns-col {
 
 </div>
 
-<!-- Redirect Trail Modal -->
-<div id="trailModal" class="modal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <strong>Redirect Trail</strong>
-      <button onclick="closeTrail()">✕</button>
-    </div>
-    <div id="trailBody" class="modal-body"></div>
-  </div>
-</div>
-
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-  let isRunning = false;
-  window.TRAILS = {};
-
-  /* ================= THEME TOGGLE ================= */
-  const themeBtn = document.getElementById("themeToggle");
-  function setTheme(t) {
-    document.body.classList.toggle("dark", t === "dark");
-    themeBtn.textContent = t === "dark" ? "🌞 Light" : "🌙 Dark";
-    localStorage.setItem("theme", t);
-  }
-  setTheme(localStorage.getItem("theme") || "light");
-  themeBtn.onclick = () =>
-    setTheme(document.body.classList.contains("dark") ? "light" : "dark");
-
-  /* ================= BULK OPEN DOMAINS ================= */
-const bulkOpenBtn = document.getElementById("bulkOpen");
-
-bulkOpenBtn.onclick = () => {
-  const domains = [...new Set(
-    textarea.value.split(/\s+/).map(d => d.trim()).filter(Boolean)
-  )];
-
-  if (!domains.length) return;
-
-  domains.forEach(d => {
-    const url = d.startsWith("http://") || d.startsWith("https://")
-      ? d
-      : "https://" + d;
-
-    window.open(url, "_blank");
-  });
-};
-
-
-  /* ================= MODAL ================= */
-  window.openTrail = function (id) {
-    const trail = window.TRAILS[id];
-    if (!trail || !trail.length) return;
-
-    const body = document.getElementById("trailBody");
-    body.innerHTML = `
-      <table class="trail-table">
-       ${trail.map((step, i) => {
-          const next = trail[i + 1]?.url;
-        
-          return `
-            <tr>
-              <td>
-                <a class="trail-url" href="${step.url}" target="_blank">
-                  ${step.url}
-                </a>
-              </td>
-              <td style="text-align:right">
-                ${
-                  step.status === 301
-                    ? `<span class="badge badge-301 badge-301-modal" title="301 to ${next || step.url}">301</span>`
-                    : step.status === 200
-                      ? `<span class="badge badge-200">200</span>`
-                      : step.status === 404
-                        ? `<span class="badge badge-404">404</span>`
-                        : `<span class="badge">${step.status}</span>`
-                }
-              </td>
-            </tr>
-          `;
-        }).join("")}
-
-      </table>
-    `;
-    document.getElementById("trailModal").style.display = "block";
-  };
-
-  window.closeTrail = () =>
-    document.getElementById("trailModal").style.display = "none";
-
-  /* ================= RUN DETECTION ================= */
   const runBtn = document.getElementById("run");
   const textarea = document.getElementById("domains");
   const tbody = document.getElementById("results");
-  const progressWrap = document.getElementById("progressWrap");
-  const progressBar = document.getElementById("progressBar");
 
   runBtn.onclick = async () => {
-    if (isRunning) return;
-    isRunning = true;
-
-    runBtn.disabled = true;
-    runBtn.textContent = "Checking…";
-    progressWrap.style.opacity = "1";
-    progressBar.style.width = "15%";
 
     const domains = [...new Set(
       textarea.value.split(/\s+/).map(d => d.trim()).filter(Boolean)
@@ -523,16 +153,9 @@ bulkOpenBtn.onclick = () => {
 
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" style="opacity:.6">Checking…</td>
+        <td colspan="7">Checking…</td>
       </tr>
     `;
-
-    let fakeProgress = setInterval(() => {
-      const current = parseInt(progressBar.style.width) || 15;
-      if (current < 85) {
-        progressBar.style.width = (current + 5) + "%";
-      }
-    }, 400);
 
     try {
       const res = await fetch("/.netlify/functions/detect", {
@@ -541,39 +164,28 @@ bulkOpenBtn.onclick = () => {
         body: JSON.stringify({ domains })
       });
 
-      clearInterval(fakeProgress);
-      progressBar.style.width = "100%";
-
       const data = await res.json();
       tbody.innerHTML = "";
-      window.TRAILS = {};
 
       data.forEach((r, i) => {
-        const id = "trail_" + i;
-        window.TRAILS[id] = r.http_trail || [];
 
         const tr = document.createElement("tr");
+
         tr.innerHTML = `
           <td>${r.domain}</td>
+
           <td>
             ${
               r.http_result?.startsWith("301 to")
-                ? `<span class="badge badge-301">301</span> ${r.http_result.replace(/^301\s+to\s+/i, "to ")}`
+                ? `<span class="badge badge-301">301</span> ${r.http_result}`
                 : r.http_result?.startsWith("http")
                   ? `<span class="badge badge-200">200</span> ${r.http_result}`
                   : r.http_result || "-"
             }
-            ${
-              r.http_trail && r.http_trail.length > 1
-                ? ` <a class="action-link" onclick="openTrail('${id}')">(view trail)</a>`
-                : ""
-            }
           </td>
 
           <td>${r.http_via || "-"}</td>
-
           <td>${r.cloudflare || "-"}</td>
-
           <td>${r.registrar || "-"}</td>
 
           <td>
@@ -583,40 +195,31 @@ bulkOpenBtn.onclick = () => {
                 : "-"
             }
           </td>
+
+          <!-- ✅ NEW COLUMN -->
+          <td>
+            ${
+              r.whm_server && r.whm_server !== "-"
+                ? `${r.whm_server}${r.whm_user && r.whm_user !== "-" ? ` (${r.whm_user})` : ""}`
+                : "-"
+            }
+          </td>
         `;
+
         tbody.appendChild(tr);
       });
 
     } catch (err) {
-      console.error(err);
       tbody.innerHTML = `
         <tr>
-          <td colspan="6" style="color:#dc2626">
-            Detection failed. Please try again.
-          </td>
+          <td colspan="7">Error loading data</td>
         </tr>
       `;
     }
-
-    setTimeout(() => {
-      progressWrap.style.opacity = "0";
-      progressBar.style.width = "0%";
-    }, 800);
-
-    runBtn.disabled = false;
-    runBtn.textContent = "Run Detection";
-    isRunning = false;
   };
+
 });
 </script>
 
 </body>
 </html>
-
-
-
-
-
-
-
-
