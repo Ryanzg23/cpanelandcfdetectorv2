@@ -4,14 +4,9 @@ import dns from "dns/promises";
 /* 🔴 REPLACE THESE WITH YOUR ACTUAL SERVERS + ENV TOKENS */
 const WHM_SERVERS = [
   {
-    name: "Server A",
+    name: "SG-1",
     host: "https://server-a.com:2087",
-    token: process.env.WHM_TOKEN_A
-  },
-  {
-    name: "Server B",
-    host: "https://server-b.com:2087",
-    token: process.env.WHM_TOKEN_B
+    token: process.env.SG1
   }
 ];
 
