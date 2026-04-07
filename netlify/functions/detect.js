@@ -89,6 +89,7 @@ async function detectWhmServer(domain) {
 
   const checks = WHM_SERVERS.map(async (server) => {
     try {
+      // STEP 1: get all accounts
       const res = await fetch(
         `${server.host}/json-api/listaccts?api.version=1`,
         {
@@ -101,37 +102,39 @@ async function detectWhmServer(domain) {
       const data = await res.json();
       const accounts = data?.data?.acct || [];
 
+      // STEP 2: loop accounts
       for (const a of accounts) {
-        const mainDomain = a.domain;
         const user = a.user;
+        const mainDomain = a.domain;
 
-        // normalize addon / parked domains
-        const addonDomains = (a.addon_domains || "")
-          .split(/\s+/)
-          .map(d => d.trim().toLowerCase())
-          .filter(Boolean);
+        // ✅ MAIN DOMAIN CHECK
+        if (domain === mainDomain || domain === `www.${mainDomain}`) {
+          return { server: server.name, user };
+        }
 
-        const parkedDomains = (a.parked_domains || "")
-          .split(/\s+/)
-          .map(d => d.trim().toLowerCase())
-          .filter(Boolean);
+        // STEP 3: check addon domains via userdata
+        try {
+          const res2 = await fetch(
+            `${server.host}/json-api/domainuserdata?api.version=1&user=${user}`,
+            {
+              headers: {
+                Authorization: `whm root:${server.token}`
+              }
+            }
+          );
 
-        const subDomains = (a.sub_domains || "")
-          .split(/\s+/)
-          .map(d => d.trim().toLowerCase())
-          .filter(Boolean);
+          const data2 = await res2.json();
+          const domains = data2?.data?.userdata || {};
 
-        if (
-          domain === mainDomain ||
-          domain === `www.${mainDomain}` ||
-          addonDomains.includes(domain) ||
-          parkedDomains.includes(domain) ||
-          subDomains.includes(domain)
-        ) {
-          return {
-            server: server.name,
-            user
-          };
+          // userdata contains ALL domains (addon, sub, etc.)
+          const allDomains = Object.keys(domains).map(d => d.toLowerCase());
+
+          if (allDomains.includes(domain)) {
+            return { server: server.name, user };
+          }
+
+        } catch (e) {
+          console.log("USERDATA ERROR:", e);
         }
       }
 
@@ -145,7 +148,6 @@ async function detectWhmServer(domain) {
   const results = await Promise.all(checks);
   return results.find(r => r) || { server: "-", user: "-" };
 }
-
 /* ================= HTTP DETECTION ================= */
 async function detectHttp(inputUrl, maxHops = 6) {
   let trail = [];
