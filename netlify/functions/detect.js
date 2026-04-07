@@ -1,7 +1,5 @@
 import dns from "dns/promises";
 
-/* ================= WHM SERVERS CONFIG ================= */
-/* 🔴 REPLACE THESE WITH YOUR ACTUAL SERVERS + ENV TOKENS */
 const WHM_SERVERS = [
   {
     name: "SG-1",
@@ -10,86 +8,26 @@ const WHM_SERVERS = [
   }
 ];
 
-/* ================= DOMAIN NORMALIZER ================= */
-function normalizeDomain(input) {
-  try {
-    input = input.trim();
-    if (!input.startsWith("http")) input = "http://" + input;
-    return new URL(input).hostname.replace(/^www\./, "").toLowerCase();
-  } catch {
-    return input.split("/")[0].replace(/^www\./, "").toLowerCase();
-  }
-}
+// 🔥 GLOBAL CACHE (persists while function is warm)
+let DOMAIN_MAP = null;
+let LAST_BUILD = 0;
+const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
 
-/* ================= URL NORMALIZER ================= */
-function normalizeUrl(input) {
-  input = input.trim();
-  if (!input.startsWith("http://") && !input.startsWith("https://")) {
-    return "http://" + input;
-  }
-  return input;
-}
+// 🧠 Build FULL domain map (main + addon + sub)
+async function buildDomainMap() {
+  const now = Date.now();
 
-/* ================= CSV PARSER ================= */
-function parseCSV(text) {
-  const rows = [];
-  let row = [];
-  let val = "";
-  let inQuotes = false;
-
-  for (let c of text) {
-    if (c === '"') inQuotes = !inQuotes;
-    else if (c === "," && !inQuotes) {
-      row.push(val);
-      val = "";
-    } else if ((c === "\n" || c === "\r") && !inQuotes) {
-      if (row.length || val) {
-        row.push(val);
-        rows.push(row);
-      }
-      row = [];
-      val = "";
-    } else {
-      val += c;
-    }
+  if (DOMAIN_MAP && (now - LAST_BUILD < CACHE_TTL)) {
+    return DOMAIN_MAP;
   }
 
-  if (row.length || val) {
-    row.push(val);
-    rows.push(row);
-  }
+  console.log("🔄 Building WHM domain map...");
 
-  const headers = rows.shift().map(h => h.trim());
-  return rows.map(r => {
-    const o = {};
-    headers.forEach((h, i) => o[h] = (r[i] || "").trim());
-    return o;
-  });
-}
+  DOMAIN_MAP = {};
 
-/* ================= REGISTRAR ================= */
-async function getRegistrar(domain) {
-  try {
-    const res = await fetch(`https://rdap.org/domain/${domain}`);
-    if (!res.ok) return "-";
-    const data = await res.json();
-    return (
-      data.entities?.find(e => e.roles?.includes("registrar"))
-        ?.vcardArray?.[1]
-        ?.find(v => v[0] === "fn")?.[3] || "-"
-    );
-  } catch {
-    return "-";
-  }
-}
-
-/* ================= WHM DETECTION ================= */
-async function detectWhmServer(domain) {
-  if (!WHM_SERVERS.length) return { server: "-", user: "-" };
-
-  const checks = WHM_SERVERS.map(async (server) => {
+  for (const server of WHM_SERVERS) {
     try {
-      // STEP 1: get all accounts
+      // 1️⃣ Get all accounts
       const res = await fetch(
         `${server.host}/json-api/listaccts?api.version=1`,
         {
@@ -102,17 +40,12 @@ async function detectWhmServer(domain) {
       const data = await res.json();
       const accounts = data?.data?.acct || [];
 
-      // STEP 2: loop accounts
+      console.log(`📦 ${server.name}: ${accounts.length} accounts`);
+
+      // 2️⃣ Loop each account → fetch ALL domains
       for (const a of accounts) {
         const user = a.user;
-        const mainDomain = a.domain;
 
-        // ✅ MAIN DOMAIN CHECK
-        if (domain === mainDomain || domain === `www.${mainDomain}`) {
-          return { server: server.name, user };
-        }
-
-        // STEP 3: check addon domains via userdata
         try {
           const res2 = await fetch(
             `${server.host}/json-api/domainuserdata?api.version=1&user=${user}`,
@@ -124,244 +57,105 @@ async function detectWhmServer(domain) {
           );
 
           const data2 = await res2.json();
-          const domains = data2?.data?.userdata || {};
+          const userdata = data2?.data?.userdata || {};
 
-          // userdata contains ALL domains (addon, sub, etc.)
-          const allDomains = Object.keys(domains).map(d => d.toLowerCase());
-
-          if (allDomains.includes(domain)) {
-            return { server: server.name, user };
+          for (const domain in userdata) {
+            DOMAIN_MAP[domain.toLowerCase()] = {
+              server: server.name,
+              user
+            };
           }
 
         } catch (e) {
-          console.log("USERDATA ERROR:", e);
+          console.log(`⚠️ USERDATA ERROR (${user}):`, e.message);
         }
       }
 
     } catch (e) {
-      console.log("WHM ERROR:", e);
+      console.log("❌ WHM ERROR:", e.message);
     }
+  }
 
-    return null;
-  });
+  LAST_BUILD = now;
 
-  const results = await Promise.all(checks);
-  return results.find(r => r) || { server: "-", user: "-" };
+  console.log(`✅ Domain map built (${Object.keys(DOMAIN_MAP).length} domains)`);
+
+  return DOMAIN_MAP;
 }
-/* ================= HTTP DETECTION ================= */
-async function detectHttp(inputUrl, maxHops = 6) {
-  let trail = [];
-  let currentUrl = normalizeUrl(inputUrl);
 
+// 🔍 Detect domain from cache
+async function detectWhmServer(domain) {
+  const map = await buildDomainMap();
+
+  domain = domain.toLowerCase();
+
+  return (
+    map[domain] ||
+    map[domain.replace(/^www\./, "")] ||
+    { server: "-", user: "-" }
+  );
+}
+
+// 🌐 Basic HTTP check
+async function checkHttp(domain) {
   try {
-    for (let i = 0; i < maxHops; i++) {
-      const res = await fetch(currentUrl, {
-        redirect: "manual",
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Bulk SEO Meta Viewer)",
-          "Accept": "text/html,application/xhtml+xml"
-        }
-      });
-
-      const server = res.headers.get("server") || "";
-      const via = server.toLowerCase().includes("cloudflare")
-        ? "Cloudflare"
-        : "htaccess";
-
-      trail.push({
-        url: currentUrl,
-        status: res.status,
-        via
-      });
-
-      const location = res.headers.get("location");
-      if (res.status >= 300 && res.status < 400 && location) {
-        currentUrl = new URL(location, currentUrl).toString();
-        continue;
-      }
-      break;
-    }
-
-    let finalUrl = currentUrl;
-
-    if (finalUrl.startsWith("http://")) {
-      try {
-        const httpsUrl = finalUrl.replace(/^http:/, "https:");
-        const httpsRes = await fetch(httpsUrl, { redirect: "manual" });
-        if (httpsRes.status >= 200 && httpsRes.status < 400) {
-          trail.push({
-            url: httpsUrl,
-            status: httpsRes.status,
-            via: httpsRes.headers.get("server")?.toLowerCase().includes("cloudflare")
-              ? "Cloudflare"
-              : "htaccess"
-          });
-          finalUrl = httpsUrl;
-        }
-      } catch {}
-    }
-
-    const startHost = new URL(normalizeUrl(inputUrl)).hostname.replace(/^www\./, "");
-    const finalHost = new URL(finalUrl).hostname.replace(/^www\./, "");
-
-    if (startHost === finalHost) {
-      const u = new URL(finalUrl);
-      return {
-        result: `${u.protocol}//${u.host}${u.pathname}${u.search}`,
-        via: trail.at(-1)?.via || "-",
-        trail
-      };
-    }
+    const url = `https://${domain}`;
+    const res = await fetch(url, { redirect: "follow" });
 
     return {
-      result: `301 to ${finalUrl}`,
-      via: trail.at(-1)?.via || "-",
-      trail
+      result: res.url,
+      status: res.status
     };
-
   } catch {
     return {
-      result: "Domain not active",
-      via: "-",
-      trail: []
+      result: "-",
+      status: "-"
     };
   }
 }
 
-/* ================= FALLBACK ================= */
-function inactiveResult(input) {
-  return {
-    domain: input,
-    cloudflare: "-",
-    registrar: "-",
-    http_result: "Domain not active",
-    http_via: "-",
-    http_trail: [],
-    nameservers: "-",
-    whm_server: "-",
-    whm_user: "-"
-  };
-}
-
-/* ================= PARALLEL RUNNER ================= */
-async function runWithConcurrency(items, limit, worker) {
-  const results = [];
-  const queue = items.map((item, index) => ({ item, index }));
-
-  const runners = Array.from({ length: limit }, async () => {
-    while (queue.length) {
-      const { item, index } = queue.shift();
-      try {
-        const result = await worker(item);
-        results.push({ index, result });
-      } catch {
-        results.push({ index, result: inactiveResult(item) });
-      }
-    }
-  });
-
-  await Promise.all(runners);
-
-  return results
-    .sort((a, b) => a.index - b.index)
-    .map(r => r.result);
-}
-
-/* ================= MAIN HANDLER ================= */
+// 🧾 MAIN HANDLER
 export async function handler(event) {
   try {
     const body = JSON.parse(event.body || "{}");
+    const domains = body.domains || [];
 
-    const inputs = [...new Set(
-      (body.domains || []).map(d => d.trim()).filter(Boolean)
-    )];
-
-    if (!inputs.length) {
-      console.log("NO DOMAINS RECEIVED", body);
+    if (!domains.length) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "No domains received", body })
+        body: JSON.stringify({ error: "No domains provided" })
       };
     }
 
-    const BASE =
-      "https://docs.google.com/spreadsheets/d/1AtmjzUR_iGHCUE_tYLMAM9BP8Zx37nGiU0g632f2594/export?format=csv&gid=";
+    const results = [];
 
-    const cfCsv = parseCSV(await (await fetch(BASE + "281551120")).text());
-    const pagesCsv = parseCSV(await (await fetch(BASE + "1856733993")).text());
+    for (const d of domains) {
+      const domain = d.trim();
 
-    const pagesMap = {};
-    pagesCsv.forEach(r => {
-      const d = normalizeDomain(r.Domain);
-      if (d) pagesMap[d] = r.Cloudflare;
-    });
+      // HTTP
+      const http = await checkHttp(domain);
 
-    
-    const cfNs = cfCsv.map(r => ({
-      email: r["Cloudflare Email"],
-      ns1: r["Nameserver 1"]?.toLowerCase(),
-      ns2: r["Nameserver 2"]?.toLowerCase()
-    }));
+      // WHM detection
+      const whm = await detectWhmServer(domain);
 
-    const results = await runWithConcurrency(inputs, 5, async (input) => {
-      const hostname = normalizeDomain(input);
-
-      const [http, whm] = await Promise.all([
-        detectHttp(input),
-        detectWhmServer(hostname)
-      ]);
-
-      if (hostname.endsWith(".pages.dev")) {
-        return {
-          domain: input,
-          cloudflare: pagesMap[hostname] || "Not listed",
-          registrar: "Cloudflare, Inc.",
-          http_result: http.result,
-          http_via: http.via,
-          http_trail: http.trail,
-          nameservers: "-",
-          whm_server: "-",
-          whm_user: "-"
-        };
-      }
-
-      let nameservers = [];
-      try {
-        nameservers = (await dns.resolveNs(hostname))
-          .map(n => n.replace(/\.$/, "").toLowerCase());
-      } catch {}
-
-      let cloudflare = "-";
-      for (const r of cfNs) {
-        if (nameservers.includes(r.ns1) && nameservers.includes(r.ns2)) {
-          cloudflare = r.email;
-          break;
-        }
-      }
-
-      return {
-        domain: input,
-        cloudflare,
-        registrar: await getRegistrar(hostname),
+      results.push({
+        domain,
         http_result: http.result,
-        http_via: http.via,
-        http_trail: http.trail,
-        nameservers: nameservers.length ? nameservers.join(", ") : "-",
+        http_status: http.status,
         whm_server: whm.server,
         whm_user: whm.user
-      };
-    });
+      });
+    }
 
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(results)
     };
 
-  } catch (err) {
+  } catch (e) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message })
+      body: JSON.stringify({ error: e.message })
     };
   }
 }
