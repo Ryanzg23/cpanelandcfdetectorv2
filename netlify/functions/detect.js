@@ -5,7 +5,7 @@ import dns from "dns/promises";
 const WHM_SERVERS = [
   {
     name: "SG-1",
-    host: "https://server-a.com:2087",
+    host: "https://15-235-215-150.cprapid.com:2087/",
     token: process.env.SG1
   }
 ];
