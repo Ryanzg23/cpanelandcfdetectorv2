@@ -90,7 +90,7 @@ async function detectWhmServer(domain) {
   const checks = WHM_SERVERS.map(async (server) => {
     try {
       const res = await fetch(
-        `${server.host}/json-api/getdomainowner?domain=${domain}`,
+        `${server.host}/json-api/listaccts?api.version=1`,
         {
           headers: {
             Authorization: `whm root:${server.token}`
@@ -100,13 +100,24 @@ async function detectWhmServer(domain) {
 
       const data = await res.json();
 
-      if (data?.data?.user) {
+      const accounts = data?.data?.acct || [];
+
+      const match = accounts.find(a =>
+        a.domain === domain ||
+        a.user === domain ||
+        (a.domain && a.domain.includes(domain))
+      );
+
+      if (match) {
         return {
           server: server.name,
-          user: data.data.user
+          user: match.user
         };
       }
-    } catch {}
+
+    } catch (e) {
+      console.log("WHM ERROR:", e);
+    }
 
     return null;
   });
