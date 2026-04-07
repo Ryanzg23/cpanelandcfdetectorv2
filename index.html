@@ -160,8 +160,12 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch("/.netlify/functions/detect", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domains })
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          domains: domains   // ← MUST be this
+        })
       });
 
       const data = await res.json();
