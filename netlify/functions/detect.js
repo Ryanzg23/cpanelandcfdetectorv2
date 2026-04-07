@@ -1,7 +1,21 @@
 import dns from "dns/promises";
 
+/* ================= WHM SERVERS CONFIG ================= */
+/* 🔴 REPLACE THESE WITH YOUR ACTUAL SERVERS + ENV TOKENS */
+const WHM_SERVERS = [
+  {
+    name: "Server A",
+    host: "https://server-a.com:2087",
+    token: process.env.WHM_TOKEN_A
+  },
+  {
+    name: "Server B",
+    host: "https://server-b.com:2087",
+    token: process.env.WHM_TOKEN_B
+  }
+];
+
 /* ================= DOMAIN NORMALIZER ================= */
-/* hostname only (for DNS / CF / registrar) */
 function normalizeDomain(input) {
   try {
     input = input.trim();
@@ -13,7 +27,6 @@ function normalizeDomain(input) {
 }
 
 /* ================= URL NORMALIZER ================= */
-/* preserves path, query, hash */
 function normalizeUrl(input) {
   input = input.trim();
   if (!input.startsWith("http://") && !input.startsWith("https://")) {
@@ -75,8 +88,39 @@ async function getRegistrar(domain) {
   }
 }
 
-/* ================= HTTP / 301 DETECTION ================= */
-/* FULL PATH SAFE */
+/* ================= WHM DETECTION ================= */
+async function detectWhmServer(domain) {
+  if (!WHM_SERVERS.length) return { server: "-", user: "-" };
+
+  const checks = WHM_SERVERS.map(async (server) => {
+    try {
+      const res = await fetch(
+        `${server.host}/json-api/getdomainowner?domain=${domain}`,
+        {
+          headers: {
+            Authorization: `whm root:${server.token}`
+          }
+        }
+      );
+
+      const data = await res.json();
+
+      if (data?.data?.user) {
+        return {
+          server: server.name,
+          user: data.data.user
+        };
+      }
+    } catch {}
+
+    return null;
+  });
+
+  const results = await Promise.all(checks);
+  return results.find(r => r) || { server: "-", user: "-" };
+}
+
+/* ================= HTTP DETECTION ================= */
 async function detectHttp(inputUrl, maxHops = 6) {
   let trail = [];
   let currentUrl = normalizeUrl(inputUrl);
@@ -84,15 +128,13 @@ async function detectHttp(inputUrl, maxHops = 6) {
   try {
     for (let i = 0; i < maxHops; i++) {
       const res = await fetch(currentUrl, {
-          redirect: "manual",
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Bulk SEO Meta Viewer)",
-            "Accept": "text/html,application/xhtml+xml",
-            "Accept-Language": "en-US,en;q=0.9"
-          }
-        });
+        redirect: "manual",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Bulk SEO Meta Viewer)",
+          "Accept": "text/html,application/xhtml+xml"
+        }
+      });
 
-      
       const server = res.headers.get("server") || "";
       const via = server.toLowerCase().includes("cloudflare")
         ? "Cloudflare"
@@ -114,7 +156,6 @@ async function detectHttp(inputUrl, maxHops = 6) {
 
     let finalUrl = currentUrl;
 
-    // HTTPS preference (preserves path)
     if (finalUrl.startsWith("http://")) {
       try {
         const httpsUrl = finalUrl.replace(/^http:/, "https:");
@@ -168,7 +209,9 @@ function inactiveResult(input) {
     http_result: "Domain not active",
     http_via: "-",
     http_trail: [],
-    nameservers: "-"
+    nameservers: "-",
+    whm_server: "-",
+    whm_user: "-"
   };
 }
 
@@ -191,19 +234,16 @@ async function runWithConcurrency(items, limit, worker) {
 
   await Promise.all(runners);
 
-  // 🔑 Restore original order
   return results
     .sort((a, b) => a.index - b.index)
     .map(r => r.result);
 }
-
 
 /* ================= MAIN HANDLER ================= */
 export async function handler(event) {
   try {
     const body = JSON.parse(event.body || "{}");
 
-    /* KEEP FULL INPUT (PATH SAFE) */
     const inputs = [...new Set(
       (body.domains || []).map(d => d.trim()).filter(Boolean)
     )];
@@ -212,7 +252,6 @@ export async function handler(event) {
       return { statusCode: 400, body: "No domains provided" };
     }
 
-    /* ===== CSV SOURCES ===== */
     const BASE =
       "https://docs.google.com/spreadsheets/d/1AtmjzUR_iGHCUE_tYLMAM9BP8Zx37nGiU0g632f2594/export?format=csv&gid=";
 
@@ -234,9 +273,11 @@ export async function handler(event) {
     const results = await runWithConcurrency(inputs, 5, async (input) => {
       const hostname = normalizeDomain(input);
 
-      const http = await detectHttp(input);
+      const [http, whm] = await Promise.all([
+        detectHttp(input),
+        detectWhmServer(hostname)
+      ]);
 
-      /* ===== pages.dev ===== */
       if (hostname.endsWith(".pages.dev")) {
         return {
           domain: input,
@@ -245,11 +286,12 @@ export async function handler(event) {
           http_result: http.result,
           http_via: http.via,
           http_trail: http.trail,
-          nameservers: "-"
+          nameservers: "-",
+          whm_server: "-",
+          whm_user: "-"
         };
       }
 
-      /* ===== NS LOOKUP ===== */
       let nameservers = [];
       try {
         nameservers = (await dns.resolveNs(hostname))
@@ -271,7 +313,9 @@ export async function handler(event) {
         http_result: http.result,
         http_via: http.via,
         http_trail: http.trail,
-        nameservers: nameservers.length ? nameservers.join(", ") : "-"
+        nameservers: nameservers.length ? nameservers.join(", ") : "-",
+        whm_server: whm.server,
+        whm_user: whm.user
       };
     });
 
@@ -288,5 +332,3 @@ export async function handler(event) {
     };
   }
 }
-
-
