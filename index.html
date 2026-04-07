@@ -127,9 +127,9 @@ body.dark tbody tr:nth-child(even) {
         <th>HTTP Result</th>
         <th>301 via</th>
         <th>Cloudflare</th>
+        <th>cPanel</th>
         <th>Registrar</th>
         <th>Nameservers</th>
-        <th>cPanel</th> <!-- ✅ NEW -->
       </tr>
     </thead>
     <tbody id="results"></tbody>
@@ -186,21 +186,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
           <td>${r.http_via || "-"}</td>
           <td>${r.cloudflare || "-"}</td>
+          
+          <!-- ✅ NEW COLUMN -->
+          <td>
+            ${
+              r.whm_server && r.whm_server !== "-"
+                ? `${r.whm_server}${r.whm_user && r.whm_user !== "-" ? ` (${r.whm_user})` : ""}`
+                : "-"
+            }
+          </td>
+          
           <td>${r.registrar || "-"}</td>
 
           <td>
             ${
               r.nameservers && r.nameservers !== "-"
                 ? r.nameservers.split(",").map(ns => `<div>${ns.trim()}</div>`).join("")
-                : "-"
-            }
-          </td>
-
-          <!-- ✅ NEW COLUMN -->
-          <td>
-            ${
-              r.whm_server && r.whm_server !== "-"
-                ? `${r.whm_server}${r.whm_user && r.whm_user !== "-" ? ` (${r.whm_user})` : ""}`
                 : "-"
             }
           </td>
