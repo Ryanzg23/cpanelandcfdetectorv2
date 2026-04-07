@@ -13,6 +13,41 @@ const WHM_SERVERS = [
     token: process.env.WHM_SG2
   },
   {
+    name: "SG-3",
+    host: "https://vps-d7d292c8.vps.ovh.ca:2087",
+    token: process.env.WHM_SG3
+  },
+  {
+    name: "GD | MAH-IP-1",
+    host: "https://184.168.124.184:2087",
+    token: process.env.GD_MAH_IP1
+  },
+  {
+    name: "GD | MAH-IP-2",
+    host: "https://148.66.156.54:2087",
+    token: process.env.GD_MAH_IP2
+  },
+  {
+    name: "GD | MAH-IP-3",
+    host: "https://148.66.153.181:2087",
+    token: process.env.GD_MAH_IP3
+  },
+  {
+    name: "NC | MAH-IP-1",
+    host: "https://209.74.88.194:2087",
+    token: process.env.NC_MAH_IP1
+  },
+  {
+    name: "NC | MAH-IP-2",
+    host: "https://209.74.87.244:2087",
+    token: process.env.NC_MAH_IP2
+  },
+  {
+    name: "NC | MAH-IP-3",
+    host: "https://209.74.77.44:2087",
+    token: process.env.NC_MAH_IP3
+  },
+  {
     name: "GD USL",
     host: "https://1.88.74.97.host.secureserver.net:2087",
     token: process.env.GD_USL
@@ -27,6 +62,15 @@ const WHM_USERS = {
   "SG-2": [
     "maha168bisa","betberryresmi","mabosplayweb","mabosplaygame",
     "maboswayyuk","depoxitovvip","slotuser138","serverusergacor"
+  ],
+  "NC | MAH-IP-1": [
+    "situsmaha168"
+  ],
+  "NC | MAH-IP-2": [
+    "centralbottle"
+  ],
+  "NC | MAH-IP-3": [
+    "shoptrudeau"
   ]
 };
 
