@@ -3,75 +3,73 @@ import dns from "dns/promises";
 /* ================= WHM CONFIG ================= */
 const WHM_SERVERS = [
   {
-    name: "SG-1",
+    name: "SG_1",
     host: "https://15-235-215-150.cprapid.com:2087",
     token: process.env.WHM_SG1
   },
   {
-    name: "SG-2",
+    name: "SG_2",
     host: "https://ns5026652.ip-15-235-216.net:2087",
     token: process.env.WHM_SG2
   },
   {
-    name: "SG-3",
+    name: "SG_3",
     host: "https://vps-d7d292c8.vps.ovh.ca:2087",
     token: process.env.WHM_SG3
   },
   {
-    name: "GD | MAH-IP-1",
+    name: "GD_MAH_IP1",
     host: "https://184.168.124.184:2087",
     token: process.env.GD_MAH_IP1
   },
   {
-    name: "GD | MAH-IP-2",
+    name: "GD_MAH_IP2",
     host: "https://148.66.156.54:2087",
     token: process.env.GD_MAH_IP2
   },
   {
-    name: "GD | MAH-IP-3",
+    name: "GD_MAH_IP3",
     host: "https://148.66.153.181:2087",
     token: process.env.GD_MAH_IP3
   },
   {
-    name: "NC | MAH-IP-1",
+    name: "NC_MAH_IP1",
     host: "https://209.74.88.194:2087",
     token: process.env.NC_MAH_IP1
   },
   {
-    name: "NC | MAH-IP-2",
+    name: "NC_MAH_IP2",
     host: "https://209.74.87.244:2087",
     token: process.env.NC_MAH_IP2
   },
   {
-    name: "NC | MAH-IP-3",
+    name: "NC_MAH_IP3",
     host: "https://209.74.77.44:2087",
     token: process.env.NC_MAH_IP3
   },
   {
-    name: "GD USL",
+    name: "GD_USL",
     host: "https://1.88.74.97.host.secureserver.net:2087",
     token: process.env.GD_USL
   }
 ];
 
 const WHM_USERS = {
-  "SG-1": [
+  SG_1: [
     "maha168slot","maha168","hokibetberry","mabosway","userslotorg",
     "depoxitojp","mabosvippro","sitususer138","judiuser138"
   ],
-  "SG-2": [
+  SG_2: [
     "maha168bisa","betberryresmi","mabosplayweb","mabosplaygame",
     "maboswayyuk","depoxitovvip","slotuser138","serverusergacor"
   ],
-  "NC | MAH-IP-1": [
-    "situsmaha168"
-  ],
-  "NC | MAH-IP-2": [
-    "centralbottle"
-  ],
-  "NC | MAH-IP-3": [
-    "shoptrudeau"
-  ]
+  NC_MAH_IP1: ["situsmaha168"],
+  NC_MAH_IP2: ["centralbottle"],
+  NC_MAH_IP3: ["shoptrudeau"],
+  GD_MAH_IP1: [],
+  GD_MAH_IP2: [],
+  GD_MAH_IP3: [],
+  GD_USL: []
 };
 
 let WHM_CACHE = null;
