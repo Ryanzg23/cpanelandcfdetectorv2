@@ -6,6 +6,11 @@ const WHM_SERVERS = [
     name: "SG-1",
     host: "https://15-235-215-150.cprapid.com:2087",
     token: process.env.WHM_SG1
+  },
+  {
+    name: "GD USL",
+    host: "https://1.88.74.97.host.secureserver.net:2087",
+    token: process.env.GD_USL
   }
 ];
 
