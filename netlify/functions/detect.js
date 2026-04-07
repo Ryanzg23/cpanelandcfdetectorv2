@@ -66,6 +66,54 @@ async function detectWhmServer(domain) {
   return { server: "-", user: "-" };
 }
 
+
+
+async function detectAddonDomain(domain) {
+  for (const server of WHM_SERVERS) {
+    try {
+      const res = await fetch(
+        `${server.host}/json-api/listaccts?api.version=1`,
+        {
+          headers: {
+            Authorization: `whm root:${server.token}`
+          }
+        }
+      );
+
+      const data = await res.json();
+      const accounts = data?.data?.acct || [];
+
+      // 🔥 limit to avoid timeout
+      for (const a of accounts.slice(0, 20)) {
+        try {
+          const res2 = await fetch(
+            `${server.host}/json-api/domainuserdata?api.version=1&user=${a.user}`,
+            {
+              headers: {
+                Authorization: `whm root:${server.token}`
+              }
+            }
+          );
+
+          const data2 = await res2.json();
+          const userdata = data2?.data?.userdata || {};
+
+          if (userdata[domain]) {
+            return {
+              server: server.name,
+              user: a.user
+            };
+          }
+
+        } catch {}
+      }
+
+    } catch {}
+  }
+
+  return { server: "-", user: "-" };
+}
+
 /* ================= DOMAIN NORMALIZER ================= */
 function normalizeDomain(input) {
   try {
@@ -247,7 +295,15 @@ export async function handler(event) {
       }
 
       /* ===== WHM ===== */
-      const whm = await detectWhmServer(hostname);
+      let whm = await detectWhmServer(hostname);
+
+      // 🔥 fallback for addon domains
+      if (whm.server === "-") {
+        const addon = await detectAddonDomain(hostname);
+        if (addon.server !== "-") {
+          whm = addon;
+        }
+      }
 
       return {
         domain: input,
