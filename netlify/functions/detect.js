@@ -8,20 +8,11 @@ const WHM_SERVERS = [
   }
 ];
 
-// 🔥 GLOBAL CACHE (persists while function is warm)
 let DOMAIN_MAP = null;
-let LAST_BUILD = 0;
-const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
 
-// 🧠 Build FULL domain map (main + addon + sub)
+// 🔥 Build domain map ONCE per request
 async function buildDomainMap() {
-  const now = Date.now();
-
-  if (DOMAIN_MAP && (now - LAST_BUILD < CACHE_TTL)) {
-    return DOMAIN_MAP;
-  }
-
-  console.log("🔄 Building WHM domain map...");
+  if (DOMAIN_MAP) return DOMAIN_MAP;
 
   DOMAIN_MAP = {};
 
@@ -39,16 +30,15 @@ async function buildDomainMap() {
       const data = await res.json();
       const accounts = data?.data?.acct || [];
 
-      console.log(`📦 ${server.name}: ${accounts.length} accounts`);
+      // 🔥 LIMIT accounts to avoid timeout (adjust if needed)
+      const LIMITED = accounts.slice(0, 15);
 
-      // 🔥 LIMIT users processed (prevents timeout)
-      const LIMITED_ACCOUNTS = accounts.slice(0, 50);
-
-      for (const a of LIMITED_ACCOUNTS) {
+      for (const a of LIMITED) {
         const user = a.user;
+        const mainDomain = a.domain.toLowerCase();
 
         // ✅ Always include main domain
-        DOMAIN_MAP[a.domain.toLowerCase()] = {
+        DOMAIN_MAP[mainDomain] = {
           server: server.name,
           user
         };
@@ -74,22 +64,19 @@ async function buildDomainMap() {
           }
 
         } catch (e) {
-          console.log(`⚠️ USERDATA ERROR (${user})`);
+          console.log(`USERDATA ERROR (${user})`);
         }
       }
 
     } catch (e) {
-      console.log("❌ WHM ERROR:", e.message);
+      console.log("WHM ERROR:", e.message);
     }
   }
 
-  LAST_BUILD = now;
-
-  console.log(`✅ Domain map built (${Object.keys(DOMAIN_MAP).length} domains)`);
-
   return DOMAIN_MAP;
 }
-// 🔍 Detect domain from cache
+
+// 🔍 Detect domain
 async function detectWhmServer(domain) {
   const map = await buildDomainMap();
 
@@ -102,11 +89,12 @@ async function detectWhmServer(domain) {
   );
 }
 
-// 🌐 Basic HTTP check
+// 🌐 HTTP check
 async function checkHttp(domain) {
   try {
-    const url = `https://${domain}`;
-    const res = await fetch(url, { redirect: "follow" });
+    const res = await fetch(`https://${domain}`, {
+      redirect: "follow"
+    });
 
     return {
       result: res.url,
@@ -133,25 +121,26 @@ export async function handler(event) {
       };
     }
 
-    const results = [];
+    // 🔥 BUILD MAP ONCE HERE
+    await buildDomainMap();
 
-    for (const d of domains) {
-      const domain = d.trim();
+    // ⚡ Process domains in parallel
+    const results = await Promise.all(
+      domains.map(async (d) => {
+        const domain = d.trim();
 
-      // HTTP
-      const http = await checkHttp(domain);
+        const http = await checkHttp(domain);
+        const whm = await detectWhmServer(domain);
 
-      // WHM detection
-      const whm = await detectWhmServer(domain);
-
-      results.push({
-        domain,
-        http_result: http.result,
-        http_status: http.status,
-        whm_server: whm.server,
-        whm_user: whm.user
-      });
-    }
+        return {
+          domain,
+          http_result: http.result,
+          http_status: http.status,
+          whm_server: whm.server,
+          whm_user: whm.user
+        };
+      })
+    );
 
     return {
       statusCode: 200,
@@ -161,7 +150,9 @@ export async function handler(event) {
   } catch (e) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: e.message })
+      body: JSON.stringify({
+        error: e.message
+      })
     };
   }
 }
