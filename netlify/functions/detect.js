@@ -88,11 +88,13 @@ async function detectAddonDomain(domain) {
       const data = await res.json();
       const accounts = data?.data?.acct || [];
 
-      // 🔥 limit to avoid timeout
-      for (const a of accounts.slice(0, 20)) {
+      // 🔥 HARD LIMIT (very important)
+      for (const a of accounts.slice(0, 5)) {
+        const user = a.user;
+
         try {
           const res2 = await fetch(
-            `${server.host}/json-api/domainuserdata?api.version=1&user=${a.user}`,
+            `${server.host}/json-api/cpanel?cpanel_jsonapi_user=${user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=AddonDomain&cpanel_jsonapi_func=listaddondomains`,
             {
               headers: {
                 Authorization: `whm root:${server.token}`
@@ -101,19 +103,27 @@ async function detectAddonDomain(domain) {
           );
 
           const data2 = await res2.json();
-          const userdata = data2?.data?.userdata || {};
+          const addons = data2?.cpanelresult?.data || [];
 
-          if (userdata[domain]) {
+          const match = addons.find(a =>
+            a.domain?.toLowerCase() === domain
+          );
+
+          if (match) {
             return {
               server: server.name,
-              user: a.user
+              user
             };
           }
 
-        } catch {}
+        } catch (e) {
+          console.log("ADDON API ERROR:", e.message);
+        }
       }
 
-    } catch {}
+    } catch (e) {
+      console.log("WHM ERROR:", e.message);
+    }
   }
 
   return { server: "-", user: "-" };
