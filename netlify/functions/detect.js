@@ -24,27 +24,27 @@ const WHM_SERVERS = [
   },
   {
     name: "GD_MAH_IP2",
-    host: "https://148.66.156.54:2087",
+    host: "https://54.156.66.148.host.secureserver.net:2087",
     token: process.env.GD_MAH_IP2
   },
   {
     name: "GD_MAH_IP3",
-    host: "https://148.66.153.181:2087",
+    host: "https://181.153.66.148.host.secureserver.net:2087",
     token: process.env.GD_MAH_IP3
   },
   {
     name: "NC_MAH_IP1",
-    host: "https://209.74.88.194:2087",
+    host: "https://server1.maharesmi.com:2087",
     token: process.env.NC_MAH_IP1
   },
   {
     name: "NC_MAH_IP2",
-    host: "https://209.74.87.244:2087",
+    host: "https://server1.maha168ku.com:2087",
     token: process.env.NC_MAH_IP2
   },
   {
     name: "NC_MAH_IP3",
-    host: "https://209.74.77.44:2087",
+    host: "https://server1.situsmaha168.com:2087",
     token: process.env.NC_MAH_IP3
   },
   {
