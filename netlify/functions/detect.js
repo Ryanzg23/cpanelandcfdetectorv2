@@ -76,20 +76,6 @@ let WHM_CACHE = null;
 
 /* ================= WHM MAIN DOMAIN ================= */
 async function buildWhmCache() {
-  const text = await res.text();
-    
-    console.log("SERVER:", server.name);
-    console.log("STATUS:", res.status);
-    console.log("RESPONSE SAMPLE:", text.slice(0, 200));
-    
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      console.log("❌ NOT JSON RESPONSE");
-      continue;
-    }
-  
   if (WHM_CACHE) return WHM_CACHE;
 
   WHM_CACHE = {};
@@ -105,8 +91,26 @@ async function buildWhmCache() {
         }
       );
 
-      const data = await res.json();
+      const text = await res.text();
+
+      console.log("====== WHM DEBUG ======");
+      console.log("SERVER:", server.name);
+      console.log("STATUS:", res.status);
+      console.log("TOKEN EXISTS:", !!server.token);
+      console.log("RESPONSE SAMPLE:", text.slice(0, 200));
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.log("❌ NOT JSON RESPONSE");
+        WHM_CACHE[server.name] = [];
+        continue;
+      }
+
       const accounts = data?.data?.acct || [];
+
+      console.log("ACCOUNTS FOUND:", accounts.length);
 
       WHM_CACHE[server.name] = accounts.map(a => ({
         domain: a.domain.toLowerCase(),
@@ -114,7 +118,8 @@ async function buildWhmCache() {
       }));
 
     } catch (e) {
-      console.log("WHM ERROR:", e.message);
+      console.log("WHM ERROR:", server.name, e.message);
+      WHM_CACHE[server.name] = [];
     }
   }
 
