@@ -19,7 +19,7 @@ const WHM_SERVERS = [
   },
   {
     name: "GD_MAH_IP1",
-    host: "https://184.168.124.184:2087",
+    host: "https://184.124.168.184.host.secureserver.net:2087",
     token: process.env.GD_MAH_IP1
   },
   {
