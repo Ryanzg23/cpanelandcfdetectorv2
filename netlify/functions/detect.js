@@ -76,6 +76,20 @@ let WHM_CACHE = null;
 
 /* ================= WHM MAIN DOMAIN ================= */
 async function buildWhmCache() {
+  const text = await res.text();
+    
+    console.log("SERVER:", server.name);
+    console.log("STATUS:", res.status);
+    console.log("RESPONSE SAMPLE:", text.slice(0, 200));
+    
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      console.log("❌ NOT JSON RESPONSE");
+      continue;
+    }
+  
   if (WHM_CACHE) return WHM_CACHE;
 
   WHM_CACHE = {};
